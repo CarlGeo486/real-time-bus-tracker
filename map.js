@@ -12,11 +12,32 @@ let allBusRoutes = {}; // Store all bus routes
 let routeFilter = document.getElementById('routeFilter');
 let routes = new Set(); // Store unique routes
 let isDropdownInitialized = false; // Flag to ensure dropdown is populated once
+let signedUrl = ''; // Store the signed URL
+
+// Function to fetch signed URL from the API (this will be called only once)
+function fetchSignedUrl() {
+    return fetch('https://get-signed-url-1030252149980.us-central1.run.app/')
+        .then(response => response.json())
+        .then(data => {
+            signedUrl = data.signedUrl;  // Store the signed URL globally
+            console.log('Signed URL fetched successfully:', signedUrl);
+        })
+        .catch(error => {
+            console.error('Error fetching signed URL:', error);
+        });
+}
 
 // Function to fetch vehicle positions and update the map
 function fetchDataAndUpdate() {
+    if (!signedUrl) {
+        console.error('Signed URL is not available yet.');
+        return;
+    }
+
     const timestamp = Date.now();
-    fetch('https://storage.googleapis.com/capmetro-tracker-updated/vehiclepositions.json?t=${timestamp}') // <-- Cache-busting parameter
+
+    // Use the signed URL to fetch data
+    fetch(`${signedUrl}&t=${timestamp}`) // Cache-busting parameter
         .then(response => response.json())
         .then(data => {
             let tableBody = document.getElementById('vehicleTable');
@@ -73,6 +94,7 @@ fetch('busroutes.geojson')
         updateMapAndTable(); // Add this line
     })
     .catch(error => console.error('Error loading bus routes:', error));
+
 // Function to update both vehicles and routes
 function updateMapAndTable() {
     let selectedRoute = routeFilter.value;
@@ -126,7 +148,9 @@ function updateMapAndTable() {
 routeFilter.addEventListener('change', updateMapAndTable);
 
 // Initial fetch and update
-fetchDataAndUpdate();
+fetchSignedUrl().then(() => {
+    fetchDataAndUpdate(); // Fetch the data once signed URL is available
+});
 
-// Fetch data and update the map every 5 seconds
-setInterval(fetchDataAndUpdate, 5000);
+// Fetch data and update the map every 15 seconds
+setInterval(fetchDataAndUpdate, 15000);

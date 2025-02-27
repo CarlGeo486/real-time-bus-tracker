@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Vehicle Positions Map</title>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #map {
+            height: 500px;
+            width: 90%;
+            margin: auto;
+        }
+
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid black;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        #filterContainer {
+            margin: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Live Vehicle Positions</h2>
+
+    <!-- Route Filter Dropdown -->
+    <div id="filterContainer">
+        <label for="routeFilter"><b>Filter by Route:</b></label>
+        <select id="routeFilter">
+            <option value="all">All Routes</option>
+        </select>
+    </div>
+
+    <!-- Leaflet Map -->
+    <div id="map"></div>
+
+    <h3>Vehicle Positions Table</h3>
+    <!-- Table to display vehicle data -->
+    <table>
+        <thead>
+            <tr>
+                <th>Vehicle ID</th>
+                <th>Route</th>
+                <th>Speed (mph)</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="vehicleTable">
+        </tbody>
+    </table>
+
+<script src="map.js"></script>
+
+</body>
+
+</html>

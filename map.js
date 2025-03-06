@@ -8,26 +8,36 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let markers = []; // Store vehicle markers
 let allVehicles = []; // Store all vehicle data
 let busRoutesLayer = null; // Store displayed bus routes
+let allBusRoutesLayer = null; // Layer for all routes when "all" is selected
 let allBusRoutes = {}; // Store all bus routes
 let routeFilter = document.getElementById('routeFilter');
 let routes = new Set(); // Store unique routes
 let isDropdownInitialized = false; // Flag to ensure dropdown is populated once
 let signedUrl = ''; // Store the signed URL
 
-// Function to fetch signed URL from the API (this will be called only once)
+// Fetch signed URL from API
 function fetchSignedUrl() {
     return fetch('https://get-signed-url-1030252149980.us-central1.run.app/')
         .then(response => response.json())
         .then(data => {
-            signedUrl = data.signedUrl;  // Store the signed URL globally
+            signedUrl = data.signedUrl; // Store globally
             console.log('Signed URL fetched successfully:', signedUrl);
         })
-        .catch(error => {
-            console.error('Error fetching signed URL:', error);
-        });
+        .catch(error => console.error('Error fetching signed URL:', error));
+}
+// Clean duplicate route ID from displayed names
+function cleanRouteName(rawName) {
+    try {
+        return typeof rawName === 'string' 
+            ? rawName.replace(/^\d+-/, '') 
+            : rawName;
+    } catch (e) {
+        console.error('Error cleaning route name:', e);
+        return rawName;
+    }
 }
 
-// Function to fetch vehicle positions and update the map
+// Fetch vehicle positions and update the map
 function fetchDataAndUpdate() {
     if (!signedUrl) {
         console.error('Signed URL is not available yet.');
@@ -36,13 +46,10 @@ function fetchDataAndUpdate() {
 
     const timestamp = Date.now();
 
-    // Use the signed URL to fetch data
-    fetch(`${signedUrl}&t=${timestamp}`) // Cache-busting parameter
+    fetch(`${signedUrl}&t=${timestamp}`)
         .then(response => response.json())
         .then(data => {
             let tableBody = document.getElementById('vehicleTable');
-
-            // Update the allVehicles array with the latest data
             allVehicles = data.entity.map(v => {
                 let lat = v.vehicle.position.latitude;
                 let lon = v.vehicle.position.longitude;
@@ -51,61 +58,90 @@ function fetchDataAndUpdate() {
                 let timestamp = new Date(v.vehicle.timestamp * 1000).toLocaleString();
                 let route = v.vehicle.trip ? v.vehicle.trip.routeId : 'N/A';
 
-                // Add the route to the Set (if not already present)
                 routes.add(route);
                 return { lat, lon, label, speed, timestamp, route, id: v.vehicle.vehicle.id };
             });
 
-            // Populate the dropdown ONLY ONCE using vehicle data
             if (!isDropdownInitialized) {
-                // Convert Set to array and sort numerically
                 const sortedRoutes = Array.from(routes).sort((a, b) => a - b);
-
+                routeFilter.innerHTML = ''; // Clear existing options
+                
+                // Create "All" option first
+                const allOption = document.createElement('option');
+                allOption.value = "all";
+                allOption.textContent = "All Routes";
+                routeFilter.appendChild(allOption);
+            
                 sortedRoutes.forEach(route => {
                     let option = document.createElement('option');
                     option.value = route;
-                    option.textContent = `Route ${route}`;
+                    
+                    const rawName = allBusRoutes[route]?.properties.ROUTENAME || '';
+                    // Clean the route name with error handling
+                    const cleanedName = cleanRouteName(rawName);
+                    option.textContent = cleanedName 
+                        ? `Route ${route} - ${cleanedName}`
+                        : `Route ${route}`;
+                
                     routeFilter.appendChild(option);
                 });
-
-                // Set the default filter to Route 20 if it exists
+                
+            
+                // Update the dropdown again after GeoJSON loads
                 if (routes.has("20")) {
                     routeFilter.value = "20";
                 }
-
-                isDropdownInitialized = true; // Prevent re-initialization
+            
+                isDropdownInitialized = true;
             }
 
-            // Update the map and table
             updateMapAndTable();
         })
         .catch(error => console.error('Error loading vehicle data:', error));
 }
 
+// Load bus routes GeoJSON
 fetch('busroutes.geojson')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+    })
     .then(data => {
         data.features.forEach(feature => {
-            let routeId = feature.properties.ROUTE_ID.toString();
-            allBusRoutes[routeId] = feature; // Store by route ID
+            try {
+                let routeId = feature.properties.ROUTE_ID?.toString();
+                if (!routeId) throw new Error('Missing ROUTE_ID in feature');
+                
+                allBusRoutes[routeId] = feature;
+                
+                const existingOption = routeFilter.querySelector(`option[value="${routeId}"]`);
+                if (existingOption) {
+                    const rawName = feature.properties.ROUTENAME || '';
+                    const cleanedName = cleanRouteName(rawName);
+                    existingOption.textContent = cleanedName 
+                        ? `Route ${routeId} - ${cleanedName}`
+                        : `Route ${routeId}`;
+                }
+            } catch (e) {
+                console.error('Error processing GeoJSON feature:', e);
+            }
         });
-
-        // Pre-render routes immediately after GeoJSON loads
-        updateMapAndTable(); // Add this line
     })
-    .catch(error => console.error('Error loading bus routes:', error));
+    .catch(error => {
+        console.error('Error loading bus routes:', error);
+        // Consider showing user notification here
+    });
 
-// Function to update both vehicles and routes
+
+// Update map and table based on selected route
 function updateMapAndTable() {
     let selectedRoute = routeFilter.value;
     let tableBody = document.getElementById('vehicleTable');
 
-    // Clear existing markers
     markers.forEach(marker => map.removeLayer(marker));
     markers = [];
     tableBody.innerHTML = '';
 
-    // Display vehicles for selected route
     allVehicles.forEach(v => {
         if (selectedRoute === "all" || v.route === selectedRoute) {
             let marker = L.marker([v.lat, v.lon]).addTo(map)
@@ -121,19 +157,55 @@ function updateMapAndTable() {
             tableBody.innerHTML += row;
         }
     });
-
-    // Remove old polyline before adding a new one
     if (busRoutesLayer) {
         map.removeLayer(busRoutesLayer);
+        busRoutesLayer = null;
     }
 
-    // Display the selected route's polyline
-    if (selectedRoute !== "all" && allBusRoutes[selectedRoute]) {
+    if (allBusRoutesLayer) {
+        map.removeLayer(allBusRoutesLayer);
+        allBusRoutesLayer = null;
+    }
+
+    if (selectedRoute === "all") {
+        allBusRoutesLayer = L.geoJSON({
+            type: "FeatureCollection",
+            features: Object.values(allBusRoutes)
+        }, {
+            style: function (feature) {
+                return {
+                    color: "#" + (feature.properties.ROUTECOLOR || "ffffff"),
+                    weight: 3,
+                    opacity: 0.5
+                };
+            },
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup(`Route: ${feature.properties.ROUTENAME} (${feature.properties.DIRECTION})`);
+                
+                // Add hover effects
+                layer.on('mouseover', function(e) {
+                    this.setStyle({
+                        weight: 5, // Thicker line on hover
+                        opacity: 1, // Full opacity
+                    });
+                    this.bringToFront(); // Bring to top
+                });
+                
+                layer.on('mouseout', function(e) {
+                    this.setStyle({
+                        weight: 3, // Revert to original weight
+                        opacity: 0.5, // Revert to original opacity
+                        color: this.options.color
+                    });
+                });
+            }
+        }).addTo(map);
+    } else if (allBusRoutes[selectedRoute]) {
         busRoutesLayer = L.geoJSON(allBusRoutes[selectedRoute], {
             style: function (feature) {
                 return {
                     color: "#" + (feature.properties.ROUTECOLOR || "000000"),
-                    weight: 3,
+                    weight: 4,
                     opacity: 0.7
                 };
             },

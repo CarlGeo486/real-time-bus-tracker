@@ -6,7 +6,9 @@ const config = {
     TILE_LAYER_ATTRIBUTION: '© OpenStreetMap contributors',
     REFRESH_INTERVAL: 15000,             // Milliseconds for data refresh
     SPEED_CONVERSION_FACTOR: 2.23694,      // Conversion factor from m/s to mph
-    DEFAULT_ROUTE: "20"                    // Default route to select if available
+    DEFAULT_ROUTE: "20",                   // Default route to select if available
+    DEFAULT_LINE_WEIGHT: 3,                // Default line weight
+    MOUSEOVER_LINE_WEIGHT: 5,              // Line weight for popup
 };
 
 // Initialize the map using config values
@@ -181,17 +183,17 @@ function updateMapAndTable() {
         }, {
             style: feature => ({
                 color: "#" + (feature.properties.ROUTECOLOR || "ffffff"),
-                weight: 5,
+                weight: config.DEFAULT_LINE_WEIGHT,
                 opacity: 0.5,
             }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(`Route: ${feature.properties.ROUTENAME} (${feature.properties.DIRECTION})`);
                 layer.on('mouseover', function () {
-                    this.setStyle({ weight: 7, opacity: 1 });
+                    this.setStyle({ weight: config.MOUSEOVER_LINE_WEIGHT, opacity: 1 });
                     this.bringToFront();
                 });
                 layer.on('mouseout', function () {
-                    this.setStyle({ weight: 5, opacity: 0.5, color: this.options.color });
+                    this.setStyle({ weight: config.DEFAULT_LINE_WEIGHT, opacity: 0.5, color: this.options.color });
                 });
             }
         }).addTo(map);
@@ -199,7 +201,7 @@ function updateMapAndTable() {
         state.busRoutesLayer = L.geoJSON(state.busRoutes[selectedRoute], {
             style: feature => ({
                 color: "#" + (feature.properties.ROUTECOLOR || "000000"),
-                weight: 6,
+                weight: config.DEFAULT_LINE_WEIGHT,
                 opacity: 0.7,
             }),
             onEachFeature: (feature, layer) => {

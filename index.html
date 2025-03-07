@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Live Bus Map</title>
+    <title>Vehicle Positions Map</title>
 
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -15,35 +15,65 @@
 
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
             text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h2, h3 {
+            color: #ffffff;
         }
 
         #map {
             height: 500px;
             width: 90%;
             margin: auto;
+            border: 2px solid #333;
+            border-radius: 8px;
         }
 
         table {
             width: 90%;
             margin: 20px auto;
             border-collapse: collapse;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        th,
-        td {
-            padding: 8px;
-            border: 1px solid black;
+        th, td {
+            padding: 12px;
+            border: 1px solid #333;
             text-align: center;
         }
 
         th {
-            background-color: #f4f4f4;
+            background-color: #333;
+            color: #ffffff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #2a2a2a;
+        }
+
+        tr:hover {
+            background-color: #3a3a3a;
         }
 
         #filterContainer {
             margin: 20px;
+        }
+
+        select {
+            background-color: #333;
+            color: #ffffff;
+            border: 1px solid #555;
+            padding: 5px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -76,6 +106,16 @@
         <tbody id="vehicleTable">
         </tbody>
     </table>
+
+    <!-- some language to describe the project -->
+    <h2>About</h2>
+
+    <div class="container">
+        <p>Thanks for using this open data project! </p>
+        <p>This project started out of the frustration of not knowing if a bus was actually on the way, and wishing there was live map like the ride share apps we use.</p>
+        <p>This wouldn't have been possible if not for  <a href="https://www.capmetro.org/metrolabs">CapMetro's MetroLabs</a> and their commitment to community engagement through open data.</p>
+       <!-- <p>Thank you for visiting! If you found this project helpful please consider dropping a few dollars to ofset the hosting costs below, and include any new features you'd like to see in the comments.</p> -->
+    </div>
 
 <script src="map.js"></script>
 

@@ -181,17 +181,17 @@ function updateMapAndTable() {
         }, {
             style: feature => ({
                 color: "#" + (feature.properties.ROUTECOLOR || "ffffff"),
-                weight: 3,
+                weight: 5,
                 opacity: 0.5,
             }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(`Route: ${feature.properties.ROUTENAME} (${feature.properties.DIRECTION})`);
                 layer.on('mouseover', function () {
-                    this.setStyle({ weight: 5, opacity: 1 });
+                    this.setStyle({ weight: 7, opacity: 1 });
                     this.bringToFront();
                 });
                 layer.on('mouseout', function () {
-                    this.setStyle({ weight: 3, opacity: 0.5, color: this.options.color });
+                    this.setStyle({ weight: 5, opacity: 0.5, color: this.options.color });
                 });
             }
         }).addTo(map);
@@ -199,7 +199,7 @@ function updateMapAndTable() {
         state.busRoutesLayer = L.geoJSON(state.busRoutes[selectedRoute], {
             style: feature => ({
                 color: "#" + (feature.properties.ROUTECOLOR || "000000"),
-                weight: 4,
+                weight: 6,
                 opacity: 0.7,
             }),
             onEachFeature: (feature, layer) => {
